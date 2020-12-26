@@ -5,6 +5,7 @@ use std::path;
 use std::path::Path;
 
 mod preferences;
+mod date;
 
 fn main() {
     let home_dir: String;
@@ -29,19 +30,21 @@ fn main() {
         process::exit(-1);
     }
     let it = it.unwrap();
-    
+
+    // Read preferences from preferences file.
     let hashmap_preferences = preferences::parse_lines(it.lines());
 
     // eprintln!("preferences: {:?}", hashmap_preferences);
-    let calendar;
+    let _calendar;
     match hashmap_preferences.get("calendar") {
-        Some(p) => calendar = Path::new(p),
+        Some(p) => _calendar = Path::new(p),
         None => {
             eprintln!("Configuration doesn't have calendar key");
             process::exit(-1);
         }
     }
 
+    // Parse command line arguments.
     let matches = App::new("when-rs")
         .version("0.1")
         .about("Simple personal calendar utility")
@@ -72,13 +75,12 @@ set up the first time you run when-rs."#)
         )
         .get_matches();
 
-    let mut arg_future: i32 = 14;
-    let mut arg_past: i32 = -1;
-    let mut arg_calendar: String = "".to_string();
+    let mut _arg_future: i32 = 14;
+    let mut _arg_past: i32 = -1;
 
     if let Some(n) = matches.value_of("future") {
         match n.parse::<i32>() {
-            Ok(future) => arg_future = future,
+            Ok(future) => _arg_future = future,
             _ => {
                 eprintln!("{}", matches.usage());
                 process::exit(-1);
@@ -89,7 +91,7 @@ set up the first time you run when-rs."#)
 
     if let Some(n) = matches.value_of("past") {
         match n.parse::<i32>() {
-            Ok(past) => arg_past = past,
+            Ok(past) => _arg_past = past,
             _ => {
                 eprintln!("{}", matches.usage());
                 process::exit(-1);
@@ -97,6 +99,8 @@ set up the first time you run when-rs."#)
         }
     }
 
+    // Get calendar from calendar file, specified in command line or
+    // preferences.
     let calendar;
     if let Some(path) = matches.value_of("calendar") {
         calendar = Path::new(path);
