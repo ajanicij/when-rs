@@ -6,6 +6,7 @@ use std::path::Path;
 
 mod preferences;
 mod date;
+mod datecalc;
 
 fn main() {
     let home_dir: String;
