@@ -1,5 +1,5 @@
 use crate::date;
-use chrono::Datelike;
+use chrono::{Datelike, Duration};
 use regex::Regex;
 
 enum NumberCheck
@@ -71,6 +71,18 @@ fn parse_month_expression(s: &str) -> Option<NumberCheck> {
         return None
     }
     Some(NumberCheck::Match(matches[0].0))
+}
+
+fn get_date_range(date1: date::Date, date2: date::Date) -> Vec<date::Date> {
+    let d1 = date1.num_days_from_ce();
+    let d2 = date2.num_days_from_ce();
+    let diff = d2 - d1;
+    let mut v: Vec<date::Date> = Vec::new();
+    for d in 0..diff {
+        let date = date1 + Duration::days(d as i64);
+        v.push(date);
+    }
+    v
 }
 
 impl DateChecker {
@@ -200,5 +212,12 @@ mod tests {
         assert_eq!(split.len(), 2);
         assert_eq!(split[0], "m");
         assert_eq!(split[1], "oct");
+    }
+
+    #[test]
+    fn creating_date_range() {
+        let date1 = date::new_date(2020, 12, 28);
+        let date2 = date::new_date(2021, 1, 3);
+        let r = get_date_range(date1, date2);
     }
 }
