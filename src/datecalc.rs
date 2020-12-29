@@ -121,11 +121,11 @@ impl DateChecker {
         Ok(DateChecker::Test { })
     }
 
-    pub fn CheckDateRange(&self, first: &date::Date, last: &date::Date) -> bool {
+    pub fn check_date_range(&self, first: &date::Date, last: &date::Date) -> bool {
         false
     }
 
-    pub fn CheckDate(&self, date: &date::Date) -> bool {
+    pub fn check_date(&self, date: &date::Date) -> bool {
         if let DateChecker::Spec{year, month, day} = self {
             if !year.check(date.year() as u32) {
                 return false;
@@ -170,27 +170,27 @@ mod tests {
         assert!(checker.is_err());
 
         let checker = DateChecker::new("1999 Jun 17").unwrap();
-        assert!(checker.CheckDate(&date));
+        assert!(checker.check_date(&date));
 
         // Different ways to specify month
         let checker = DateChecker::new("1999 july 17").unwrap();
-        assert!(!checker.CheckDate(&date));
+        assert!(!checker.check_date(&date));
 
         // Negative test
         let checker = DateChecker::new("2001 Jun 17").unwrap();
-        assert!(!checker.CheckDate(&date));
+        assert!(!checker.check_date(&date));
 
         // TODO
         // Positive test, with *
         let checker = DateChecker::new("* Jun 17").unwrap();
-        assert!(checker.CheckDate(&date));
+        assert!(checker.check_date(&date));
 
         let date = date::new_date(1969, 5, 14);
-        assert!(!checker.CheckDate(&date));
+        assert!(!checker.check_date(&date));
         let checker = DateChecker::new("* May 14").unwrap();
-        assert!(checker.CheckDate(&date));
+        assert!(checker.check_date(&date));
         let checker = DateChecker::new("1969 may *").unwrap();
-        assert!(checker.CheckDate(&date));
+        assert!(checker.check_date(&date));
     }
 
     #[test]
