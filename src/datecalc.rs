@@ -73,13 +73,13 @@ fn parse_month_expression(s: &str) -> Option<NumberCheck> {
     Some(NumberCheck::Match(matches[0].0))
 }
 
-fn get_date_range(date1: date::Date, date2: date::Date) -> Vec<date::Date> {
+fn get_date_range(date1: &date::Date, date2: &date::Date) -> Vec<date::Date> {
     let d1 = date1.num_days_from_ce();
     let d2 = date2.num_days_from_ce();
     let diff = d2 - d1;
     let mut v: Vec<date::Date> = Vec::new();
     for d in 0..diff {
-        let date = date1 + Duration::days(d as i64);
+        let date = *date1 + Duration::days(d as i64);
         v.push(date);
     }
     v
@@ -122,6 +122,12 @@ impl DateChecker {
     }
 
     pub fn check_date_range(&self, first: &date::Date, last: &date::Date) -> bool {
+        let date_range = get_date_range(first, last);
+        for d in date_range {
+            if self.check_date(&d) {
+                return true;
+            }
+        }
         false
     }
 
@@ -160,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn simple_test_check() {
+    fn simple_check_test() {
         let date = date::new_date(1999, 6, 17);
         assert_eq!(date.year(), 1999);
         assert_eq!(date.month(), 6);
@@ -218,6 +224,24 @@ mod tests {
     fn creating_date_range() {
         let date1 = date::new_date(2020, 12, 28);
         let date2 = date::new_date(2021, 1, 3);
-        let r = get_date_range(date1, date2);
+        let r = get_date_range(&date1, &date2);
+    }
+
+    #[test]
+    fn check_date_range() {
+        let date1 = date::new_date(2020, 12, 28);
+        let date2 = date::new_date(2021, 1, 3);
+        let r = get_date_range(&date1, &date2);
+        let checker = DateChecker::new("* Jan 2").unwrap();
+        assert!(checker.check_date_range(&date1, &date2));
+
+        let checker = DateChecker::new("* Jan 4").unwrap();
+        assert!(!checker.check_date_range(&date1, &date2));
+
+        let checker = DateChecker::new("2020 decem 27").unwrap();
+        assert!(!checker.check_date_range(&date1, &date2));
+
+        let checker = DateChecker::new("2020 decem 28").unwrap();
+        assert!(checker.check_date_range(&date1, &date2));
     }
 }
