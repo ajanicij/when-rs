@@ -3,10 +3,15 @@ use std::process;
 use std::env;
 use std::path;
 use std::path::Path;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
+use chrono::{Local, Duration};
 
 mod preferences;
 mod date;
 mod datecalc;
+mod utils;
 
 fn main() {
     let home_dir: String;
@@ -76,12 +81,12 @@ set up the first time you run when-rs."#)
         )
         .get_matches();
 
-    let mut _arg_future: i32 = 14;
-    let mut _arg_past: i32 = -1;
+    let mut arg_future: i32 = 14;
+    let mut arg_past: i32 = -1;
 
     if let Some(n) = matches.value_of("future") {
         match n.parse::<i32>() {
-            Ok(future) => _arg_future = future,
+            Ok(future) => arg_future = future,
             _ => {
                 eprintln!("{}", matches.usage());
                 process::exit(-1);
@@ -92,7 +97,7 @@ set up the first time you run when-rs."#)
 
     if let Some(n) = matches.value_of("past") {
         match n.parse::<i32>() {
-            Ok(past) => _arg_past = past,
+            Ok(past) => arg_past = past,
             _ => {
                 eprintln!("{}", matches.usage());
                 process::exit(-1);
@@ -112,6 +117,34 @@ set up the first time you run when-rs."#)
         process::exit(-1);
     }
 
-    eprintln!("calendar file is {:?}", calendar);
-
+    // eprintln!("calendar file is {:?}", calendar);
+    let file = File::open(calendar);
+    if let Err(err) = file {
+        eprintln!("Failure opening {}: {}", calendar.to_str().unwrap(), err);
+        process::exit(-1);
+    }
+    let file = file.unwrap();
+    let reader = BufReader::new(file);
+    for line in reader.lines() {
+        if let Ok(line_str) = line {
+            // eprintln!("Line: {}", line_str);
+            if let Some((expr, descr)) = utils::parse_calendar_line(&line_str) {
+                // eprintln!(" -- expression: {}", expr);
+                // eprintln!(" -- description: {}", descr);
+                if let Ok(checker) = datecalc::DateChecker::new(&expr) {
+                    // let date = date::new_date(2021, 1, 2);
+                    let today = Local::today().naive_local();
+                    let date1 = today + Duration::days(arg_past.into());
+                    let date2 = today + Duration::days(arg_future.into());
+                    if let Some(date) = checker.check_date_range(&date1, &date2) {
+                        if date == today {
+                            println!("today {} {}", date.format("%Y %b %e"), descr);
+                        } else {
+                            println!("      {} {}", date.format("%Y %b %e"), descr);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

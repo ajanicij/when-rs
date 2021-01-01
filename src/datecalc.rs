@@ -1,8 +1,8 @@
 use crate::date;
-use chrono::{Datelike, Duration};
+use chrono::{Duration, Datelike};
 use regex::Regex;
 
-enum NumberCheck
+pub enum NumberCheck
 {
     Any,
     Match(u32)
@@ -59,7 +59,7 @@ fn parse_month_expression(s: &str) -> Option<NumberCheck> {
         (12, "december"),
     ];
     let matches: Vec<(u32, &str)> = months.iter()
-        .filter(|(ind, m)| (*m).starts_with(&ls))
+        .filter(|(_, m)| (*m).starts_with(&ls))
         .map(|(ind, m)| (*ind, *m))
         .collect();
     if matches.len() == 0 {
@@ -78,7 +78,7 @@ fn get_date_range(date1: &date::Date, date2: &date::Date) -> Vec<date::Date> {
     let d2 = date2.num_days_from_ce();
     let diff = d2 - d1;
     let mut v: Vec<date::Date> = Vec::new();
-    for d in 0..diff {
+    for d in 0..=diff {
         let date = *date1 + Duration::days(d as i64);
         v.push(date);
     }
@@ -93,7 +93,7 @@ impl DateChecker {
                 return Err(String::from("Bad date expression"));
             }
             let re = re.unwrap();
-            let mut split: Vec<&str> = re.split(expr).collect();
+            let split: Vec<&str> = re.split(expr).collect();
             if split.len() != 3 {
                 return Err(String::from("Bad date expression"));
             }
@@ -121,14 +121,16 @@ impl DateChecker {
         Ok(DateChecker::Test { })
     }
 
-    pub fn check_date_range(&self, first: &date::Date, last: &date::Date) -> bool {
+    pub fn check_date_range(&self, first: &date::Date, last: &date::Date) ->
+        Option<date::Date>
+    {
         let date_range = get_date_range(first, last);
         for d in date_range {
             if self.check_date(&d) {
-                return true;
+                return Some(d);
             }
         }
-        false
+        None
     }
 
     pub fn check_date(&self, date: &date::Date) -> bool {
@@ -159,15 +161,21 @@ impl DateChecker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{Datelike, NaiveDate};
 
     #[test]
     fn fail() {
         assert_eq!(1, 1);
     }
 
+    // Utility function used just for test
+    fn new_date(year: i32, month: u32, day: u32) -> date::Date {
+        NaiveDate::from_ymd(year, month, day)
+    }
+
     #[test]
     fn simple_check_test() {
-        let date = date::new_date(1999, 6, 17);
+        let date = new_date(1999, 6, 17);
         assert_eq!(date.year(), 1999);
         assert_eq!(date.month(), 6);
         assert_eq!(date.day(), 17);
@@ -191,7 +199,7 @@ mod tests {
         let checker = DateChecker::new("* Jun 17").unwrap();
         assert!(checker.check_date(&date));
 
-        let date = date::new_date(1969, 5, 14);
+        let date = new_date(1969, 5, 14);
         assert!(!checker.check_date(&date));
         let checker = DateChecker::new("* May 14").unwrap();
         assert!(checker.check_date(&date));
@@ -204,7 +212,7 @@ mod tests {
         assert_eq!(1, 1);
         let str = "  one two  three";
         let re = Regex::new(r"\s+").unwrap();
-        let mut split: Vec<&str> = re.split(str).collect();
+        let split: Vec<&str> = re.split(str).collect();
         assert_eq!(split.len(), 4);
         assert_eq!(split[1], "one");
         assert_eq!(split[2], "two");
@@ -213,7 +221,7 @@ mod tests {
         // Parse expressions such as m=may
         let str = "m=oct";
         let re = Regex::new(r"=").unwrap();
-        let mut split: Vec<&str> = re.split(str).collect();
+        let split: Vec<&str> = re.split(str).collect();
         eprintln!("split is {:?}", split);
         assert_eq!(split.len(), 2);
         assert_eq!(split[0], "m");
@@ -222,26 +230,27 @@ mod tests {
 
     #[test]
     fn creating_date_range() {
-        let date1 = date::new_date(2020, 12, 28);
-        let date2 = date::new_date(2021, 1, 3);
+        let date1 = new_date(2020, 12, 28);
+        let date2 = new_date(2021, 1, 3);
         let r = get_date_range(&date1, &date2);
+        eprintln!("r is {:?}", r);
+        assert_eq!(r.len(), 7);
     }
 
     #[test]
     fn check_date_range() {
-        let date1 = date::new_date(2020, 12, 28);
-        let date2 = date::new_date(2021, 1, 3);
-        let r = get_date_range(&date1, &date2);
+        let date1 = new_date(2020, 12, 28);
+        let date2 = new_date(2021, 1, 3);
         let checker = DateChecker::new("* Jan 2").unwrap();
-        assert!(checker.check_date_range(&date1, &date2));
+        assert!(checker.check_date_range(&date1, &date2).is_some());
 
         let checker = DateChecker::new("* Jan 4").unwrap();
-        assert!(!checker.check_date_range(&date1, &date2));
+        assert!(checker.check_date_range(&date1, &date2).is_none());
 
         let checker = DateChecker::new("2020 decem 27").unwrap();
-        assert!(!checker.check_date_range(&date1, &date2));
+        assert!(checker.check_date_range(&date1, &date2).is_none());
 
         let checker = DateChecker::new("2020 decem 28").unwrap();
-        assert!(checker.check_date_range(&date1, &date2));
+        assert!(checker.check_date_range(&date1, &date2).is_some());
     }
 }

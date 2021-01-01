@@ -1,21 +1,14 @@
-use chrono::{
-    Local,
-    Utc,
-    Duration,
-    NaiveDate,
-    Datelike,
-    offset,
-};
-
 pub type Date = chrono::NaiveDate;
-
-pub fn new_date(year: i32, month: u32, day: u32) -> Date {
-    NaiveDate::from_ymd(year, month, day)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{Datelike, Duration, Local, NaiveDate};
+
+    // Utility function used just for test
+    fn new_date(year: i32, month: u32, day: u32) -> Date {
+        NaiveDate::from_ymd(year, month, day)
+    }
 
     #[test]
     fn date_calculation() {
