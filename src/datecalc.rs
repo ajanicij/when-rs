@@ -88,11 +88,7 @@ fn get_date_range(date1: &date::Date, date2: &date::Date) -> Vec<date::Date> {
 impl DateChecker {
     pub fn new(expr: &str) -> Result<DateChecker, String> {
         if (expr.find('=') == None) && (expr.find('&') == None) {
-            let re = Regex::new(r"\s+");
-            if re.is_err() {
-                return Err(String::from("Bad date expression"));
-            }
-            let re = re.unwrap();
+            let re = Regex::new(r"\s+").unwrap();
             let split: Vec<&str> = re.split(expr).collect();
             if split.len() != 3 {
                 return Err(String::from("Bad date expression"));

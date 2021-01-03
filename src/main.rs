@@ -149,12 +149,11 @@ want to use to run your editor, or hit return to accept this default:
     expect(writeln!(&mut file, "editor = {}", editor),
         &format!("Writing to file {}", preferences_path));
 
-    let mut calendar_file = File::create(&calendar_path);
+    let calendar_file = File::create(&calendar_path);
     if let Err(error) = calendar_file {
         eprintln!("@#$% Error creating file {}: {}", calendar_path, error);
         process::exit(-1);
     }
-    let mut file = calendar_file.unwrap();
 
     // process::exit(0);
     println!(r#"
@@ -163,16 +162,6 @@ You can now add items to your calendar file. Do ``when-rs --help'' for more info
 }
 
 fn main() {
-    let home_dir: String;
-
-    home_dir = expect(env::var("HOME"), "HOME unknown");
-
-//    let preferences_path = path::Path::new(&home_dir).join(".when-rs").join("preferences")
-//        .to_str()
-//        .unwrap()
-//        .to_string();
-    // println!("preferences: {}", preferences_path);
-
     let preferences_path = home_subdir(vec![
         ".when-rs".to_string(),
         "preferences".to_string()
@@ -193,7 +182,7 @@ fn main() {
     // Read preferences from preferences file.
     let hashmap_preferences = preferences::parse_lines(preferences.lines());
 
-    let calendar = expect_option(
+    let _calendar = expect_option(
         hashmap_preferences.get("calendar"), "Configuration doesn't define calendar");
 
     // Parse command line arguments.
