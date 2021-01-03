@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{App, Arg, SubCommand};
 use std::process;
 use std::env;
 use std::path;
@@ -43,6 +43,10 @@ this to be a negative value. Default: -1"#)
 file pointed to by your preferences file, which is
 set up the first time you run when-rs."#)
         )
+        .subcommand(
+            SubCommand::with_name("e")
+            .about("runs editor for editing calendar file")
+        )
         .get_matches();
 
     matches
@@ -75,6 +79,20 @@ fn prompt(message: &str) -> Option<String> {
         Ok(_) => Some(buffer.trim_end().to_string()),
         _ => None
     }
+}
+
+fn system(v: Vec<&str>) -> bool {
+    let s = v.join(" ");
+    let v2: Vec<&str> = s.split(" ").collect();
+    assert!(v2.len() > 0);
+    let cmd = v2[0];
+    let args: Vec<&str> = v2.iter().skip(1).map(|s| *s).collect();
+    // println!("cmd is {}, args is {:?}", cmd, args);
+    let status = process::Command::new(cmd)
+        .args(args)
+        .status()
+        .expect("Failed to execute editor");
+    status.success()
 }
 
 // home_subdir creates path string of a directory that is under current
@@ -178,7 +196,6 @@ fn main() {
         preferences = it.unwrap();
     }
 
-
     // Read preferences from preferences file.
     let hashmap_preferences = preferences::parse_lines(preferences.lines());
 
@@ -209,6 +226,21 @@ fn main() {
     } else {
         eprintln!("Configuration doesn't have calendar key");
         process::exit(-1);
+    }
+
+    if matches.is_present("e") {
+        if let Some(editor) = hashmap_preferences.get("editor") {
+            // println!("Invoking editor {}", editor);
+            let command_arg = format!("{}", calendar.to_str().unwrap());
+            let cmd_str = [&editor[..], &command_arg[..]].join(" ");
+            let v = cmd_str.split(" ");
+            if system(v.collect()) {
+                process::exit(0);
+            } else {
+                eprintln!("Invoking editor failed");
+                process::exit(-1);
+            }
+        }
     }
 
     // eprintln!("calendar file is {:?}", calendar);
