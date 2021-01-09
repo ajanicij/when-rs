@@ -8,7 +8,7 @@ can be made better/simple/more idiomatic. Any comments, suggestions and PRs are 
 
 ## Usage
 
-when-rs --help with display this:
+when-rs --help will display this:
 
 ```
 USAGE:
