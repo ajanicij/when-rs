@@ -1,1 +1,1 @@
-- Implement invoking calendar editor: when-rs e.
+- Add options w, m and y to print items for the coming week, month or year.

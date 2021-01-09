@@ -260,13 +260,19 @@ fn main() {
                 if let Ok(checker) = datecalc::DateChecker::new(&expr) {
                     // let date = date::new_date(2021, 1, 2);
                     let today = Local::today().naive_local();
+                    let yesterday = today.pred();
+                    let tomorrow = today.succ();
                     let date1 = today + Duration::days(arg_past.into());
                     let date2 = today + Duration::days(arg_future.into());
                     if let Some(date) = checker.check_date_range(&date1, &date2) {
                         if date == today {
-                            println!("today {} {}", date.format("%Y %b %e"), descr);
+                            println!("today      {} {}", date.format("%Y %b %e"), descr);
+                        } else if date == yesterday {
+                            println!("yesterday  {} {}", date.format("%Y %b %e"), descr);
+                        } else if date == tomorrow {
+                            println!("tomorrow   {} {}", date.format("%Y %b %e"), descr);
                         } else {
-                            println!("      {} {}", date.format("%Y %b %e"), descr);
+                            println!("           {} {}", date.format("%Y %b %e"), descr);
                         }
                     }
                 }
