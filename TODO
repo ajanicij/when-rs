@@ -1,1 +1,2 @@
 + Add options w, m and y to print items for the coming week, month or year.
++ Add option --[no]header to print headers at the top of the output.

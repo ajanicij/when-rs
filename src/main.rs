@@ -43,6 +43,18 @@ this to be a negative value. Default: -1"#)
 file pointed to by your preferences file, which is
 set up the first time you run when-rs."#)
         )
+        .arg(
+            Arg::with_name("header")
+                .long("header")
+                .takes_value(false)
+                .help(r#"Print headers at the top of the output"#)
+        )
+        .arg(
+            Arg::with_name("noheader")
+                .long("noheader")
+                .takes_value(false)
+                .help(r#"Don't print headers at the top of the output"#)
+        )
         .subcommand(
             SubCommand::with_name("e")
                 .about("runs editor for editing calendar file")
@@ -211,8 +223,8 @@ fn main() {
     // Read preferences from preferences file.
     let hashmap_preferences = preferences::parse_lines(preferences.lines());
 
-    let _calendar = expect_option(
-        hashmap_preferences.get("calendar"), "Configuration doesn't define calendar");
+//    let _calendar = expect_option(
+//        hashmap_preferences.get("calendar"), "Configuration doesn't define calendar");
 
     // Parse command line arguments.
     let matches = get_arg();
@@ -266,6 +278,12 @@ fn main() {
         arg_future = 7;
     }
 
+    let mut header: bool = true;
+
+    if matches.is_present("noheader") {
+        header = false;
+    }
+
     let today = Local::today().naive_local();
     let yesterday = today.pred();
     let tomorrow = today.succ();
@@ -280,6 +298,12 @@ fn main() {
     }
     let file = file.unwrap();
     let reader = BufReader::new(file);
+
+    if (header) {
+        let now = Local::now();
+        println!("{} {}\n", today.format("%a %Y %b %e"), now.format("%R"));
+    }
+
     for line in reader.lines() {
         if let Ok(line_str) = line {
             // eprintln!("Line: {}", line_str);
