@@ -42,7 +42,7 @@ fn parse_number_expression(s: &str) -> Option<NumberCheck> {
     }
 }
 
-fn parse_month_expression(s: &str) -> Option<NumberCheck> {
+fn parse_month(s: &str) -> Option<u8> {
     let ls = s.to_lowercase();
     let months = vec![
         (1, "january"),
@@ -58,19 +58,27 @@ fn parse_month_expression(s: &str) -> Option<NumberCheck> {
         (11, "november"),
         (12, "december"),
     ];
-    let matches: Vec<(u32, &str)> = months.iter()
+    let matches: Vec<(u8, &str)> = months.iter()
         .filter(|(_, m)| (*m).starts_with(&ls))
         .map(|(ind, m)| (*ind, *m))
         .collect();
+
     if matches.len() == 0 {
         // No match
-        return None
+        return None;
     }
     if matches.len() > 1 {
         // More than one match; we don't know which month.
-        return None
+        return None;
     }
-    Some(NumberCheck::Match(matches[0].0))
+    Some(matches[0].0)
+}
+
+fn parse_month_expression(s: &str) -> Option<NumberCheck> {
+    if let Some(n) = parse_month(s) {
+        return Some(NumberCheck::Match(n as u32));
+    }
+    None
 }
 
 fn get_date_range(date1: &date::Date, date2: &date::Date) -> Vec<date::Date> {
@@ -153,6 +161,34 @@ impl DateChecker {
 //       1. - Date pattern, such as * Feb 14
 //       2. - Conjunction of terms, such as
 //            m=jan & w=mon & a=3
+
+pub fn parse_date(s: &str) -> Option<date::Date> {
+    let re = Regex::new(r"\s+").unwrap();
+    let split: Vec<&str> = re.split(s).collect();
+    if split.len() != 3 {
+        return None;
+    }
+    
+    let year = split[0].parse::<i32>();
+    if year.is_err() {
+        return None;
+    }
+    let year = year.unwrap();
+
+    let month = parse_month(split[1]);
+    if month.is_none() {
+        return None;
+    }
+    let month = month.unwrap();
+
+    let day = split[2].parse::<u32>();
+    if day.is_err() {
+        return None;
+    }
+    let day = day.unwrap();
+    
+    Some(date::new_date(year, month as u32, day))
+}
 
 #[cfg(test)]
 mod tests {
@@ -248,5 +284,29 @@ mod tests {
 
         let checker = DateChecker::new("2020 decem 28").unwrap();
         assert!(checker.check_date_range(&date1, &date2).is_some());
+    }
+
+    #[test]
+    fn parse_month_test() {
+        let month_str = "jan";
+        let month = parse_month(month_str);
+        assert!(month.is_some());
+        assert_eq!(month.unwrap(), 1);
+
+        // Now unsuccessful parse.
+        let month_str = "ju";
+        let month = parse_month(month_str);
+        assert!(month.is_none());
+    }
+
+    #[test]
+    fn parse_date_test() {
+        let date = parse_date("2021 Jan 9");
+        assert!(date.is_some());
+        // TODO:
+        // let date = date.unwrap();
+        // assert_eq!(date.year(), 2021);
+        // assert_eq!(date.month(), 1);
+        // assert_eq!(date.day(), 9);
     }
 }

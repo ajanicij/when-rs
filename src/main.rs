@@ -44,6 +44,12 @@ file pointed to by your preferences file, which is
 set up the first time you run when-rs."#)
         )
         .arg(
+            Arg::with_name("now")
+                .long("now")
+                .takes_value(true)
+                .help(r#"Pretend today is some other date."#)
+        )
+        .arg(
             Arg::with_name("header")
                 .long("header")
                 .takes_value(false)
@@ -86,14 +92,14 @@ fn expect<Data, Error>(r: Result<Data, Error>, message: &str) -> Data
     r.unwrap()
 }
 
-fn expect_option<Data>(r: Option<Data>, message: &str) -> Data
-{
-    if r.is_none() {
-        eprintln!("{}", message);
-        process::exit(-1);
-    }
-    r.unwrap()
-}
+//fn expect_option<Data>(r: Option<Data>, message: &str) -> Data
+//{
+//    if r.is_none() {
+//        eprintln!("{}", message);
+//        process::exit(-1);
+//    }
+//    r.unwrap()
+//}
 
 fn prompt(message: &str) -> Option<String> {
     println!("{}", message);
@@ -252,6 +258,19 @@ fn main() {
         process::exit(-1);
     }
 
+    let today;
+    if let Some(now) = matches.value_of("now") {
+        // TODO: use now to calculate today.
+        let today_opt = datecalc::parse_date(now);
+        if today_opt.is_none() {
+            eprintln!("Bad date string: {}", now);
+            process::exit(-1);
+        }
+        today = today_opt.unwrap();
+    } else {
+        today = Local::today().naive_local();
+    }
+
     if matches.is_present("e") {
         if let Some(editor) = hashmap_preferences.get("editor") {
             // println!("Invoking editor {}", editor);
@@ -284,7 +303,7 @@ fn main() {
         header = false;
     }
 
-    let today = Local::today().naive_local();
+    // let today = Local::today().naive_local();
     let yesterday = today.pred();
     let tomorrow = today.succ();
     let date1 = today - Duration::days(arg_past);
@@ -299,7 +318,7 @@ fn main() {
     let file = file.unwrap();
     let reader = BufReader::new(file);
 
-    if (header) {
+    if header {
         let now = Local::now();
         println!("{} {}\n", today.format("%a %Y %b %e"), now.format("%R"));
     }
