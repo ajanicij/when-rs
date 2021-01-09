@@ -45,7 +45,19 @@ set up the first time you run when-rs."#)
         )
         .subcommand(
             SubCommand::with_name("e")
-            .about("runs editor for editing calendar file")
+                .about("runs editor for editing calendar file")
+        )
+        .subcommand(
+            SubCommand::with_name("w")
+                .about("print items for the coming week")
+        )
+        .subcommand(
+            SubCommand::with_name("m")
+                .about("print items for the comming month")
+        )
+        .subcommand(
+            SubCommand::with_name("y")
+                .about("print items for the coming year")
         )
         .get_matches();
 
@@ -243,11 +255,22 @@ fn main() {
         }
     }
 
+    let arg_past: i64 = arg_past.into();
+    let mut arg_future: i64 = arg_future.into();
+
+    if matches.is_present("y") {
+        arg_future = 366;
+    } else if matches.is_present("m") {
+        arg_future = 31;
+    } else if matches.is_present("w") {
+        arg_future = 7;
+    }
+
     let today = Local::today().naive_local();
     let yesterday = today.pred();
     let tomorrow = today.succ();
-    let date1 = today - Duration::days(arg_past.into());
-    let date2 = today + Duration::days(arg_future.into());
+    let date1 = today - Duration::days(arg_past);
+    let date2 = today + Duration::days(arg_future);
 
     // eprintln!("calendar file is {:?}", calendar);
     let file = File::open(calendar);
