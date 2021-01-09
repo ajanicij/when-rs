@@ -1,2 +1,5 @@
 + Add options w, m and y to print items for the coming week, month or year.
 + Add option --[no]header to print headers at the top of the output.
+- Add option now:
+  --now="Y M D"
+        Pretend today is some other date.
