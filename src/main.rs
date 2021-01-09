@@ -243,6 +243,12 @@ fn main() {
         }
     }
 
+    let today = Local::today().naive_local();
+    let yesterday = today.pred();
+    let tomorrow = today.succ();
+    let date1 = today - Duration::days(arg_past.into());
+    let date2 = today + Duration::days(arg_future.into());
+
     // eprintln!("calendar file is {:?}", calendar);
     let file = File::open(calendar);
     if let Err(err) = file {
@@ -258,12 +264,6 @@ fn main() {
                 // eprintln!(" -- expression: {}", expr);
                 // eprintln!(" -- description: {}", descr);
                 if let Ok(checker) = datecalc::DateChecker::new(&expr) {
-                    // let date = date::new_date(2021, 1, 2);
-                    let today = Local::today().naive_local();
-                    let yesterday = today.pred();
-                    let tomorrow = today.succ();
-                    let date1 = today + Duration::days(arg_past.into());
-                    let date2 = today + Duration::days(arg_future.into());
                     if let Some(date) = checker.check_date_range(&date1, &date2) {
                         if date == today {
                             println!("today      {} {}", date.format("%Y %b %e"), descr);
