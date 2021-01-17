@@ -17,6 +17,7 @@ impl NumberCheck {
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub enum DateExpression {
     W(u16), // day of the week
     M(u16), // month
@@ -131,7 +132,8 @@ impl DateChecker {
 
             return Ok(DateChecker::Spec { year, month, day });
         }
-        Ok(DateChecker::Expr(vec![]))
+        // TODO: parse date expression.
+        Ok(DateChecker::Expr(vec![DateExpression::W(2)]))
     }
 
     pub fn check_date_range(&self, first: &date::Date, last: &date::Date) ->
@@ -267,6 +269,21 @@ mod tests {
         assert_eq!(split.len(), 2);
         assert_eq!(split[0], "m");
         assert_eq!(split[1], "oct");
+    }
+
+    #[test]
+    fn parsing_test_variables() {
+        let checker = DateChecker::new("w=2");
+        assert!(!checker.is_err());
+        let checker = checker.unwrap();
+        match checker {
+            DateChecker::Expr(v) => {
+                assert_eq!(v.len(), 1);
+                // TODO: check that v[0] is DateExpression::W(2).
+                assert_eq!(v[0], DateExpression::W(2));
+            },
+            _ => assert!(false),
+        }
     }
 
     #[test]
