@@ -17,16 +17,26 @@ impl NumberCheck {
     }
 }
 
+pub enum DateExpression {
+    W(u16), // day of the week
+    M(u16), // month
+    D(u16), // day of the month
+    Y(u16), // year
+    A(u16), // 1 for the first 7 days of the month, 2 for the next 7, etc.
+    C(u16), // on Monday or Friday, equals the day of the month of the
+            // nearest weekend day; otherwise -1
+    Z(u16), // day of the year (1 on New Year Day)
+} 
+
 pub enum DateChecker {
     Spec {
         year: NumberCheck,
         month: NumberCheck,
         day: NumberCheck,
     },
-    Test {
-        // TODO: specified by an expression
-        //       e.g: m=jul & c=4
-    }
+    Expr (
+        Vec<DateExpression>,
+    )
 }
 
 fn parse_number_expression(s: &str) -> Option<NumberCheck> {
@@ -121,8 +131,7 @@ impl DateChecker {
 
             return Ok(DateChecker::Spec { year, month, day });
         }
-        // TODO
-        Ok(DateChecker::Test { })
+        Ok(DateChecker::Expr(vec![]))
     }
 
     pub fn check_date_range(&self, first: &date::Date, last: &date::Date) ->
@@ -304,9 +313,9 @@ mod tests {
         let date = parse_date("2021 Jan 9");
         assert!(date.is_some());
         // TODO:
-        // let date = date.unwrap();
-        // assert_eq!(date.year(), 2021);
-        // assert_eq!(date.month(), 1);
-        // assert_eq!(date.day(), 9);
+        let date = date.unwrap();
+        assert_eq!(date.year(), 2021);
+        assert_eq!(date.month(), 1);
+        assert_eq!(date.day(), 9);
     }
 }
