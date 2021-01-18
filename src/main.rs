@@ -29,7 +29,7 @@ fn get_arg() -> clap::ArgMatches<'static> {
             Arg::with_name("past")
                 .long("past")
                 .takes_value(true)
-                .default_value("-1")
+                .default_value("1")
                 .help(r#"How many days into the past the report extends.
 Like the --future option, --past is interpreted as an offset
 relative to the present date, so normally you would want
@@ -236,7 +236,7 @@ fn main() {
     let matches = get_arg();
 
     let mut arg_future: i32 = 14;
-    let mut arg_past: i32 = -1;
+    let mut arg_past: i32 = 1;
 
     if let Some(n) = matches.value_of("future") {
         arg_future = expect(n.parse::<i32>(), matches.usage());
