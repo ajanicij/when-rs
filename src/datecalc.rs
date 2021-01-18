@@ -24,10 +24,34 @@ pub enum DateExpression {
     D(u16), // day of the month
     Y(u16), // year
     A(u16), // 1 for the first 7 days of the month, 2 for the next 7, etc.
-    C(u16), // on Monday or Friday, equals the day of the month of the
-            // nearest weekend day; otherwise -1
     Z(u16), // day of the year (1 on New Year Day)
 } 
+
+impl DateExpression {
+    fn check(&self, date: &date::Date) -> bool {
+        match self {
+            DateExpression::W(w) => {
+                let weekday = date.weekday().number_from_monday();
+                return (*w as u32) == weekday;
+            },
+            DateExpression::M(m) => {
+                return (*m as u32) == date.month();
+            },
+            DateExpression::D(d) => {
+                return (*d as u32) == date.day();
+            },
+            DateExpression::Y(y) => {
+                return (*y as i32) == date.year();
+            },
+            DateExpression::A(a) => {
+                return (date.day() / 7) + 1 == *a as u32;
+            },
+            DateExpression::Z(z) => {
+                return date.ordinal() == *z as u32;
+            },
+        }
+    }
+}
 
 pub enum DateChecker {
     Spec {
@@ -133,37 +157,118 @@ impl DateChecker {
             return Ok(DateChecker::Spec { year, month, day });
         }
         // TODO: parse date expression.
-        Ok(DateChecker::Expr(vec![DateExpression::W(2)]))
+        let re = Regex::new(r"\s+").unwrap();
+        let split: Vec<&str> = re.split(expr).collect();
+        if split.len() % 2 != 1 {
+            // Expression must have form e1 & e2 & ... & en
+            // Where ei are terms like w=3. So there must be an odd number
+            // of words separated by spaces.
+            return Err(String::from("Bad date expression"));
+        }
+        let mut v: Vec<DateExpression> = vec![];
+        let mut i = 0;
+        loop {
+            let re2 = Regex::new("=").unwrap();
+            let term = split[i];
+            // term must have the form like "w=3".
+            let parts: Vec<&str> = re2.split(term).collect();
+            if parts.len() != 2 {
+                return Err(String::from("Bad date expression"));
+            }
+
+            let val = parts[1].parse::<u16>();
+            let term;
+            match parts[0] {
+                "w" => match val {
+                    Ok(w) => term = DateExpression::W(w),
+                    Err(_) => return Err(String::from("Bad date expression")),
+                },
+                "m" => match val {
+                    // TODO: parse month like "jan", instead of a number.
+                    Ok(m) => term = DateExpression::M(m),
+                    Err(_) => {
+                        let month = parse_month(parts[1]);
+                        match month {
+                            Some(m) => term = DateExpression::M(m as u16),
+                            None => return Err(String::from("Bad date expression")),
+                        }
+                    }
+                },
+                "d" => match val {
+                    Ok(d) => term = DateExpression::D(d),
+                    Err(_) => return Err(String::from("Bad date expression")),
+                },
+                "y" => match val {
+                    Ok(y) => term = DateExpression::Y(y),
+                    Err(_) => return Err(String::from("Bad date expression")),
+                },
+                "a" => match val {
+                    Ok(a) => term = DateExpression::A(a),
+                    Err(_) => return Err(String::from("Bad date expression")),
+                },
+                "z" => match val {
+                    Ok(z) => term = DateExpression::Z(z),
+                    Err(_) => return Err(String::from("Bad date expression")),
+                },
+                _   => {
+                    return Err(String::from("Bad date expression"));
+                },
+            }
+            v.push(term);
+
+            if i + 1 >= split.len() {
+                break;
+            }
+            if split[i+1] != "&" {
+                return Err(String::from("Bad date expression"));
+            }
+            i = i + 2;
+        }
+        
+        // Ok(DateChecker::Expr(vec![DateExpression::W(2)]))
+        Ok(DateChecker::Expr(v))
     }
 
     pub fn check_date_range(&self, first: &date::Date, last: &date::Date) ->
-        Option<date::Date>
+        Vec<date::Date>
     {
         let date_range = get_date_range(first, last);
+        let mut v: Vec<date::Date> = vec![];
         for d in date_range {
             if self.check_date(&d) {
-                return Some(d);
+                v.push(d);
             }
         }
-        None
+        v
     }
 
     pub fn check_date(&self, date: &date::Date) -> bool {
-        if let DateChecker::Spec{year, month, day} = self {
-            if !year.check(date.year() as u32) {
-                return false;
-            }
+        match self {
+            DateChecker::Spec{year, month, day} => {
+                if !year.check(date.year() as u32) {
+                    return false;
+                }
 
-            if !month.check(date.month()) {
-                return false;
-            }
+                if !month.check(date.month()) {
+                    return false;
+                }
 
-            if !day.check(date.day()) {
-                return false;
+                if !day.check(date.day()) {
+                    return false;
+                }
+                return true;
+            },
+            DateChecker::Expr(v) => {
+                for term in v {
+                    if !term.check(date) {
+                        return false;
+                    }
+                }
+                return true;
             }
         }
 
-        true
+        
     }
 }
 
@@ -251,6 +356,26 @@ mod tests {
     }
 
     #[test]
+    fn expression_check_test() {
+        let date = new_date(1999, 6, 17);
+        let checker = DateChecker::new("m=june & d=17").unwrap();
+        assert!(checker.check_date(&date));
+
+        let date = parse_date("2021 Feb 1").unwrap();
+        let checker = DateChecker::new("z=32").unwrap();
+        assert!(checker.check_date(&date));
+
+        // 2021 September 21 is Tuesday.
+        let date = parse_date("2021 Sep 21").unwrap();
+        let checker = DateChecker::new("m=9 & w=2").unwrap();
+        assert!(checker.check_date(&date));
+
+        // Negative test
+        let checker = DateChecker::new("m=july").unwrap();
+        assert!(!checker.check_date(&date));
+    }
+
+    #[test]
     fn parsing_date_expression() {
         assert_eq!(1, 1);
         let str = "  one two  three";
@@ -284,6 +409,18 @@ mod tests {
             },
             _ => assert!(false),
         }
+
+        let checker = DateChecker::new("m=feb");
+        assert!(!checker.is_err());
+    }
+
+    #[test]
+    fn parsing_test_variables_negative() {
+        let checker = DateChecker::new("w=2 &");
+        assert!(checker.is_err());
+
+        let checker = DateChecker::new("abc &");
+        assert!(checker.is_err());
     }
 
     #[test]
@@ -300,16 +437,16 @@ mod tests {
         let date1 = new_date(2020, 12, 28);
         let date2 = new_date(2021, 1, 3);
         let checker = DateChecker::new("* Jan 2").unwrap();
-        assert!(checker.check_date_range(&date1, &date2).is_some());
+        assert_eq!(checker.check_date_range(&date1, &date2).len(), 1);
 
         let checker = DateChecker::new("* Jan 4").unwrap();
-        assert!(checker.check_date_range(&date1, &date2).is_none());
+        assert_eq!(checker.check_date_range(&date1, &date2).len(), 0);
 
         let checker = DateChecker::new("2020 decem 27").unwrap();
-        assert!(checker.check_date_range(&date1, &date2).is_none());
+        assert_eq!(checker.check_date_range(&date1, &date2).len(), 0);
 
         let checker = DateChecker::new("2020 decem 28").unwrap();
-        assert!(checker.check_date_range(&date1, &date2).is_some());
+        assert_eq!(checker.check_date_range(&date1, &date2).len(), 1);
     }
 
     #[test]
@@ -334,5 +471,62 @@ mod tests {
         assert_eq!(date.year(), 2021);
         assert_eq!(date.month(), 1);
         assert_eq!(date.day(), 9);
+    }
+
+    #[test]
+    fn check_date_term_test() {
+        // Test w
+        let term = DateExpression::W(3); // Wednesday
+        let date = parse_date("2038 Jan 20").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("2020 Jan 3").unwrap();
+        assert!(!term.check(&date));
+
+        // Test m
+        let term = DateExpression::M(7); // July
+        let date = parse_date("2021 July 11").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("2020 Jan 3").unwrap();
+        assert!(!term.check(&date));
+
+        // Test d
+        let term = DateExpression::D(17);
+        let date = parse_date("2021 Feb 17").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("1969 may 14").unwrap();
+        assert!(!term.check(&date));
+
+        // Test y
+        let term = DateExpression::Y(2001);
+        let date = parse_date("2001 january 1").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("2020 Dec 31").unwrap();
+        assert!(!term.check(&date));
+
+        // Test a
+        let term = DateExpression::A(2);
+        let date = parse_date("2021 Feb 8").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("2001 january 1").unwrap();
+        assert!(!term.check(&date));
+
+        // Test z
+        let term = DateExpression::Z(32);
+        let date = parse_date("2021 Feb 1").unwrap();
+        assert!(term.check(&date));
+
+        // Negative test
+        let date = parse_date("2001 Mar 1").unwrap();
+        assert!(!term.check(&date));
     }
 }

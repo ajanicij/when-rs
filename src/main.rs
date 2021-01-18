@@ -260,7 +260,6 @@ fn main() {
 
     let today;
     if let Some(now) = matches.value_of("now") {
-        // TODO: use now to calculate today.
         let today_opt = datecalc::parse_date(now);
         if today_opt.is_none() {
             eprintln!("Bad date string: {}", now);
@@ -323,6 +322,9 @@ fn main() {
         println!("{} {}\n", today.format("%a %Y %b %e"), now.format("%R"));
     }
 
+    // println!("date1 is {:?}", date1);
+    // println!("date2 is {:?}", date2);
+
     for line in reader.lines() {
         if let Ok(line_str) = line {
             // eprintln!("Line: {}", line_str);
@@ -330,7 +332,8 @@ fn main() {
                 // eprintln!(" -- expression: {}", expr);
                 // eprintln!(" -- description: {}", descr);
                 if let Ok(checker) = datecalc::DateChecker::new(&expr) {
-                    if let Some(date) = checker.check_date_range(&date1, &date2) {
+                    let dates = checker.check_date_range(&date1, &date2);
+                    for date in dates {
                         if date == today {
                             println!("today      {} {}", date.format("%Y %b %e"), descr);
                         } else if date == yesterday {
