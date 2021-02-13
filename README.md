@@ -26,6 +26,7 @@ OPTIONS:
                                  set up the first time you run when-rs.
         --future <future>        How many days into the future the report extends. [default: 14]
         --now <now>              Pretend today is some other date.
+                                 For example, --now="2022 Jan 1" pretends that today is 2022 January 1.
         --past <past>            How many days into the past the report extends.
                                  Like the --future option, --past is interpreted as an offset
                                  relative to the present date, so normally you would want
@@ -80,3 +81,33 @@ The simplest usage:
     for range of days between today and 14 days from today.
 - when-rs e
   - Edits calendar
+
+## Date patterns
+
+Date patterns in the calendar have the following rules:
+
+- <year> <month> <day> - self explanatory
+  - Example: 2021 Mach 8
+  - Month can be the full month, like March, or a prefix, like Mar. Any case is
+    accepted, for example, mar, Mar and MAR are all fine. It can't be ambiguous,
+    for example, jun is fine, but ju is not because it can mean June or July.
+  - Any component can be a '*', which matches any value, so for example
+    2021 * 1 is the first day of any month in 2021.
+- <simple-expresion> & <simple-expression> & ... - Logical conjunction of simple
+  expressions, where a simple expression can be one of:
+  - y=<year> - for example, y=2022
+  - d=<day> - day of the month, for example d=14 is the 14th of the month
+  - m=<month> - month, for example m=May is May
+  - w=<day> - day of the week, for example w=1 is Monday
+  - a=<week> - week of the month, for example a=1 is the first 7 days of the month,
+               a=2 is the next 7 days etc.
+  - z=<day> - day of the year, for example z=1 is January 1
+
+Some examples:
+
+```
+* January 1, New Year's Day
+2021 July 23, Tokyo Olympic Games 2020 opening day
+* Feb 14, Sant Valentine's Day
+w=5, TGIF Yay!
+```

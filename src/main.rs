@@ -47,7 +47,8 @@ set up the first time you run when-rs."#)
             Arg::with_name("now")
                 .long("now")
                 .takes_value(true)
-                .help(r#"Pretend today is some other date."#)
+                .help(r#"Pretend today is some other date.
+For example, --now="2022 Jan 1" pretends that today is 2022 January 1."#)
         )
         .arg(
             Arg::with_name("header")

@@ -3,4 +3,6 @@
 + Add option now:
   --now="Y M D"
         Pretend today is some other date.
-- Add date expressions like m=jan & w=sun.
++ Add date expressions like m=jan & w=sun.
++ Document all options
+- Sort resulting days
