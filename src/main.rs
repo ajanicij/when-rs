@@ -326,6 +326,7 @@ fn main() {
     // println!("date1 is {:?}", date1);
     // println!("date2 is {:?}", date2);
 
+    let mut all_dates: Vec<(date::Date, String)> = Vec::new();
     for line in reader.lines() {
         if let Ok(line_str) = line {
             // eprintln!("Line: {}", line_str);
@@ -334,19 +335,26 @@ fn main() {
                 // eprintln!(" -- description: {}", descr);
                 if let Ok(checker) = datecalc::DateChecker::new(&expr) {
                     let dates = checker.check_date_range(&date1, &date2);
-                    for date in dates {
-                        if date == today {
-                            println!("today      {} {}", date.format("%Y %b %e"), descr);
-                        } else if date == yesterday {
-                            println!("yesterday  {} {}", date.format("%Y %b %e"), descr);
-                        } else if date == tomorrow {
-                            println!("tomorrow   {} {}", date.format("%Y %b %e"), descr);
-                        } else {
-                            println!("           {} {}", date.format("%Y %b %e"), descr);
-                        }
+                    for date in &dates {
+                        all_dates.push((*date, descr.clone()));
                     }
                 }
             }
+        }
+    }
+
+    // Sort and print the result.
+    let sorted_dates = datecalc::sort_dates(all_dates);
+    for date in sorted_dates {
+        let date_str = date.0.format("%Y %b %e");
+        if date.0 == today {
+            println!("today      {} {}", date_str, date.1);
+        } else if date.0 == yesterday {
+            println!("yesterday  {} {}", date_str, date.1);
+        } else if date.0 == tomorrow {
+            println!("tomorrow   {} {}", date_str, date.1);
+        } else {
+            println!("           {} {}", date_str, date.1);
         }
     }
 }

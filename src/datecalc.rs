@@ -306,6 +306,14 @@ pub fn parse_date(s: &str) -> Option<date::Date> {
     Some(date::new_date(year, month as u32, day))
 }
 
+pub fn sort_dates(dates: Vec<(date::Date, String)>) -> Vec<(date::Date, String)> {
+    let mut sorted_dates = dates;
+    sorted_dates.sort_by(|x, y| {
+        x.0.cmp(&y.0)
+    });
+    sorted_dates
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -433,7 +441,7 @@ mod tests {
     }
 
     #[test]
-    fn check_date_range() {
+    fn check_date_range_test() {
         let date1 = new_date(2020, 12, 28);
         let date2 = new_date(2021, 1, 3);
         let checker = DateChecker::new("* Jan 2").unwrap();
@@ -528,5 +536,18 @@ mod tests {
         // Negative test
         let date = parse_date("2001 Mar 1").unwrap();
         assert!(!term.check(&date));
+    }
+
+    #[test]
+    fn sort_dates_test() {
+        let mut dates: Vec<(date::Date, String)> = Vec::new();
+        dates.push((new_date(2020, 12, 28), "first".to_string()));
+        dates.push((new_date(2020, 11, 20), "second".to_string()));
+        dates.push((new_date(2020, 12, 10), "third".to_string()));
+        let dates = sort_dates(dates);
+        assert_eq!(dates.len(), 3);
+        assert_eq!(dates[0], (new_date(2020, 11, 20), "second".to_string()));
+        assert_eq!(dates[1], (new_date(2020, 12, 10), "third".to_string()));
+        assert_eq!(dates[2], (new_date(2020, 12, 28), "first".to_string()));
     }
 }
