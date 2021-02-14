@@ -108,6 +108,6 @@ Some examples:
 ```
 * January 1, New Year's Day
 2021 July 23, Tokyo Olympic Games 2020 opening day
-* Feb 14, Sant Valentine's Day
+* Feb 14, Saint Valentine's Day
 w=5, TGIF Yay!
 ```
